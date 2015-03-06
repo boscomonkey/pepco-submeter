@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 
 require 'minitest/autorun'
-require 'time'
 require File.expand_path(File.join('..', '..', 'lib', 'csv_converter'),
                          File.dirname(__FILE__))
 

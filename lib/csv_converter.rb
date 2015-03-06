@@ -2,6 +2,7 @@
 
 require 'csv'
 require 'set'
+require 'time'
 
 class CsvConverter
   class ProcessResult < Struct.new(:channels, :points, :data); end
