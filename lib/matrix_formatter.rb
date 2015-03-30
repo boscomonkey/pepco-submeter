@@ -66,7 +66,7 @@ class MatrixFormatter
   end
 
   def build_timestamp_key(time)
-    time.strftime '%m/%d/%Y %H:%M'
+    time.strftime '%m/%d/%Y %H:%M:%S'
   end
 
 end
@@ -446,8 +446,8 @@ if __FILE__ == $0
     end
 
     def test_build_timestamp_key
-      time = Time.parse "Oct 1, 2013 11:30PM"
-      assert_equal "10/01/2013 23:30", @matfor.build_timestamp_key(time)
+      time = Time.parse "Oct 1, 2013 11:30:01 PM"
+      assert_equal "10/01/2013 23:30:01", @matfor.build_timestamp_key(time)
     end
   end
 

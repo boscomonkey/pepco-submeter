@@ -27,6 +27,22 @@ class CsvConverterTest < Minitest::Test
     assert_equal 95, result.data.size, 'INCORRECT TIMESTAMP COUNT'
   end
 
+  def test_data_loss
+    fname = 'test/fixtures/data-loss.csv'
+    File.open(fname) do |fin|
+      result = @cc.process fin
+      assert_equal 136, result.data.size
+    end
+  end
+
+  def test_unknown_line_format
+    fname = 'test/fixtures/test-data-loss.csv'
+    err = assert_raises(RuntimeError) {
+      File.open(fname) {|fin| @cc.process fin }
+    }
+    assert_match /Unknown Line Format \(test\/fixtures\/test-data-loss.csv: 114\):\W+Test Data Loss/, err.message
+  end
+
   def test_add_to_hash
     hsh = @cc.add_to_hash({}, 111, 222, 333, 444)
     expected = {111 => {222 => {333 => 444}}}

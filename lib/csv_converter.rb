@@ -34,6 +34,8 @@ class CsvConverter
         # ignore blanks
       when /^ \*{30,}/
         # ignore asterisk separators
+      when /^Data Loss$/
+        # ignore "Data Loss" lines
       when /^\d+\/\d+\/\d+$/
         # 10/1/2013,0:00:00,630784, -N-       NONE
         dt, tm, val = row
@@ -42,7 +44,7 @@ class CsvConverter
         
         self.add_to_hash(hash3, timestamp, curr_point, curr_channel, data)
       else
-        raise "Unknown Line Format:\t#{line}"
+        raise "Unknown Line Format (#{instream.path}: #{instream.lineno}):\t#{line}"
       end
     end
 
