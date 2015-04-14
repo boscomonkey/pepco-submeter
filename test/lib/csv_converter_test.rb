@@ -31,7 +31,10 @@ class CsvConverterTest < Minitest::Test
     fname = 'test/fixtures/data-loss.csv'
     File.open(fname) do |fin|
       result = @cc.process fin
-      assert_equal 136, result.data.size
+
+      # should really be 96 (24 hours x 4 quarters per hour) but there
+      # are three weird timestamps
+      assert_equal 99, result.data.size
     end
   end
 
@@ -80,5 +83,28 @@ class CsvConverterTest < Minitest::Test
 
     assert_equal Time.parse('Oct 1, 2013 00:15:00'), tstamp,
                  'parsing Pepco timestamp incorrectly'
+  end
+
+  def test_round_off_seconds_after
+    tstamp = Time.parse('Oct 1, 2013 00:15:01')
+    expected = Time.parse('Oct 1, 2013 00:15:00')
+
+    assert_equal expected, @cc.round_off_seconds(tstamp)
+  end
+
+  def test_round_off_seconds_before
+    tstamp = Time.parse('Oct 1, 2013 00:14:59')
+    expected = Time.parse('Oct 1, 2013 00:15:00')
+
+    assert_equal expected, @cc.round_off_seconds(tstamp)
+  end
+
+  def test_accrue_seconds_to_nearest_hour
+    fname = 'test/fixtures/zero-minutes.csv'
+    result = @cc.process(File.read fname)
+
+    # there should only be 4 different timestamps
+    time_hash = result.data
+    assert_equal 4, time_hash.keys.size
   end
 end
