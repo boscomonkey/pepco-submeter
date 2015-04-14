@@ -41,8 +41,7 @@ class CsvConverter
       when /^\d+\/\d+\/\d+$/
         # 10/1/2013,0:00:00,630784, -N-       NONE
         dt, tm, val = row
-        raw_timestamp = self.to_timestamp(dt, tm)		# may be off by seconds
-        timestamp = self.round_off_seconds(raw_timestamp)	# round to nearest min
+        timestamp = self.to_timestamp(dt, tm)
         data = self.to_num_if_possible(val)
         
         self.add_to_hash(hash3, timestamp, curr_point, curr_channel, data)
@@ -81,7 +80,11 @@ class CsvConverter
   end
 
   def to_timestamp(date_str, time_str)
-    Time.strptime "#{date_str} #{time_str}", '%m/%d/%Y %H:%M:%S'
+    # may be off by seconds
+    tm = Time.strptime "#{date_str} #{time_str}", '%m/%d/%Y %H:%M:%S'
+
+    # round to nearest minute if seconds aren't "00"
+    ":00" == time_str[-3,3] ? tm : self.round_off_seconds(tm)
   end
 
 end
