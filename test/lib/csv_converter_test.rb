@@ -107,4 +107,11 @@ class CsvConverterTest < Minitest::Test
     time_hash = result.data
     assert_equal 4, time_hash.keys.size
   end
+
+  def test_no_data_in_range
+    fname = 'test/fixtures/no-data-in-range_DEM_Report_07-28-14.csv'
+    result = @cc.process(File.read fname)
+
+    assert_equal 0, result.data.size
+  end
 end

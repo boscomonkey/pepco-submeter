@@ -36,6 +36,8 @@ class CsvConverter
         # ignore asterisk separators
       when /^Data Loss$/
         # ignore "Data Loss" lines
+      when /^No data in range specified\./
+        # ignore "No data in range specified."
       when /^\d+\/\d+\/\d+$/
         # 10/1/2013,0:00:00,630784, -N-       NONE
         dt, tm, val = row
