@@ -28,7 +28,7 @@ class CsvConverterTest < Minitest::Test
   end
 
   def test_data_loss
-    fname = 'test/fixtures/data-loss.csv'
+    fname = 'test/fixtures/data-loss_DEM_Report_11-03-14.csv'
     File.open(fname) do |fin|
       result = @cc.process fin
 
