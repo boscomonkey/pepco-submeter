@@ -32,9 +32,7 @@ class CsvConverterTest < Minitest::Test
     File.open(fname) do |fin|
       result = @cc.process fin
 
-      # should really be 96 (24 hours x 4 quarters per hour) but there
-      # are three weird timestamps
-      assert_equal 99, result.data.size
+      assert_equal 24*4, result.data.size
     end
   end
 
