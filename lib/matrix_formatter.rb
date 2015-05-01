@@ -403,7 +403,7 @@ if __FILE__ == $0
                       "WZC25:VOLTAGE B.N",
                       "WZC25:VOLTAGE C.N"]]
                    ].flatten,
-                   @matfor.build_channel_heading(presult),
+                   heading,
                    'INCORRECT CHANNEL HEADING'
     end
 
