@@ -10,6 +10,24 @@ class CsvConverter
   class RowsBuffer < Array
     alias :append	:<<
     alias :flush	:clear
+
+    def initialize(converter)
+      @converter = converter
+    end
+
+    def write(hash3d, curr_point, curr_channel)
+      unless self.empty?
+        self.each do |row|
+          dt, tm, val = row
+          timestamp = @converter.to_timestamp(dt, tm)
+          data = @converter.to_num_if_possible(val)
+          
+          @converter.add_to_hash(hash3d, timestamp, curr_point, curr_channel, data)
+        end
+
+        self.flush
+      end
+    end
   end
 
   def process(instream)
@@ -18,30 +36,14 @@ class CsvConverter
     points_set = Set.new
     curr_channel = nil
     curr_point = nil
-
-    rows_buffer = RowsBuffer.new
-    write_buffer = lambda do
-      if !rows_buffer.empty?
-        rows_buffer.each do |row|
-          dt, tm, val = row
-          timestamp = self.to_timestamp(dt, tm)
-          data = self.to_num_if_possible(val)
-          
-          self.add_to_hash(hash3, timestamp, curr_point, curr_channel, data)
-        end
-
-        # reset buffer
-        rows_buffer.flush
-      end
-    end
+    rows_buffer = RowsBuffer.new(self)
 
     instream.each_line do |line|
       row = line.parse_csv
 
       case row.first
       when 'Point Name:'
-        # write buffer
-        write_buffer.call
+        rows_buffer.write(hash3, curr_point, curr_channel)
 
         # "Point Name:","NZA12:CONSUMPTN HI"
         # split the 2nd element of the row, not the last element
@@ -78,7 +80,7 @@ class CsvConverter
       end
     end
 
-    write_buffer.call
+    rows_buffer.write(hash3, curr_point, curr_channel)
     ProcessResult.new(channels_set.sort, points_set.sort, hash3)
   end
 
