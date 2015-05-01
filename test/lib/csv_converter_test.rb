@@ -13,18 +13,23 @@ class CsvConverterTest < Minitest::Test
     fname = 'test/fixtures/DEM_Report_10-02-13.csv'
     result = @cc.process(File.read fname)
 
-    assert_equal ["NZA12", "NZA13", "NZA14", "NZA17", "NZA22",
-                  "NZA23", "NZB12", "NZB13", "NZB14", "NZB17",
-                  "NZB23", "NZB28", "NZBA22", "SZD11", "SZD12",
-                  "SZD14", "SZE13", "SZE14", "SZE22", "WZC11",
-                  "WZC12", "WZC14", "WZC22", "WZC24", "WZC25"],
-                  result.points, 'points are wrong'
-    assert_equal ["CONSUMPTN HI", "CONSUMPTN LO", "CURRENT A",
-                  "CURRENT B", "CURRENT C", "DAY.NGT", "DEMAND",
-                  "POWER FACTOR", "VOLTAGE A.N", "VOLTAGE B.N",
-                  "VOLTAGE C.N"], result.channels, 'channels are
-                  wrong'
+    expected_points = ["NZA12", "NZA13", "NZA14", "NZA17", "NZA22",
+                       "NZA23", "NZB12", "NZB13", "NZB14", "NZB17",
+                       "NZB23", "NZB28", "NZBA22", "SZD11", "SZD12",
+                       "SZD14", "SZE13", "SZE14", "SZE22", "WZC11",
+                       "WZC12", "WZC14", "WZC22", "WZC24", "WZC25"]
+    expected_channels = ["CONSUMPTN HI", "CONSUMPTN LO", "CURRENT A",
+                         "CURRENT B", "CURRENT C", "DAY.NGT", "DEMAND",
+                         "POWER FACTOR", "VOLTAGE A.N", "VOLTAGE B.N",
+                         "VOLTAGE C.N"]
+
+    assert_equal expected_points, result.points, 'points are wrong'
+    assert_equal expected_channels, result.channels, 'channels are wrong'
     assert_equal 95, result.data.size, 'INCORRECT TIMESTAMP COUNT'
+
+    tstamp = result.data.keys.first
+    assert_equal Time.parse('2013-10-01 00:00:00 -0400'), tstamp
+    assert_equal expected_points.size, result.data[tstamp].size, "TIME KEY: #{tstamp}"
   end
 
   def test_data_loss
