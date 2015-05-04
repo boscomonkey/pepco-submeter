@@ -32,6 +32,70 @@ class CsvConverterTest < Minitest::Test
     assert_equal expected_points.size, result.data[tstamp].size, "TIME KEY: #{tstamp}"
   end
 
+  def test_consolidate_consumption
+    fname = 'test/fixtures/DEM_Report_10-02-13.csv'
+    result = @cc.process(File.read fname)
+    consolidated = @cc.consolidate_consumption(result)
+
+    expected_channels = ["CONSUMPTN", "CONSUMPTN HI", "CONSUMPTN LO",
+                         "CURRENT A", "CURRENT B", "CURRENT C",
+                         "DAY.NGT", "DEMAND", "POWER FACTOR",
+                         "VOLTAGE A.N", "VOLTAGE B.N", "VOLTAGE C.N"]
+    assert_equal expected_channels, consolidated.channels
+
+    # each data point at each time should have extra channel dimension
+    consolidated.data.each do |timestamp, points_matrix|
+      points_matrix.each do |pointname, channels_data|
+        if channels_data.include?('CONSUMPTN HI') && channels_data.include?('CONSUMPTN LO')
+          assert channels_data.include?('CONSUMPTN'), "include? #{timestamp} :: #{pointname}"
+
+          if timestamp == consolidated.data.keys.first
+            # first timestamp should be nil
+            assert_nil channels_data['CONSUMPTN'], "assert_nil: #{timestamp} :: #{pointname}"
+          else
+            # remaining timestamps are not nil
+            refute_nil channels_data['CONSUMPTN'], "refute_nil: #{timestamp} :: #{pointname}"
+          end
+        end
+      end
+    end
+
+    # compare data for NZA12
+    expected_consumption = [nil, 3, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5,
+                            5, 4, 5, 5, 4, 5, 4, 5, 4, 5, 4, 5, 6, 6,
+                            6, 5, 7, 8, 8, 8, 9, 9, 11, 11, 12, 13,
+                            13, 13, 14, 13, 13, 13, 13, 14, 13, 13,
+                            13, 13, 13, 13, 13, 13, 13, 13, 13, 12,
+                            13, 12, 12, 13, 13, 12, 11, 12, 11, 11,
+                            10, 10, 8, 8, 7, 6, 7, 6, 6, 6, 5, 5, 5,
+                            5, 4, 4, 3, 3, 4, 3, 4, 3, 3, 3]
+    test_consumption = consolidated.data.reduce([]) do |memo, pair|
+      timestamp     = pair[0]
+      points_matrix = pair[1]
+      assert_instance_of Hash, points_matrix
+
+      if channels = points_matrix['NZA12']
+        assert_instance_of Hash, channels, "DIE :: #{timestamp} :: #{memo.size}"
+
+        memo << channels['CONSUMPTN']
+      else
+        memo
+      end
+    end
+    assert_equal expected_consumption, test_consumption
+  end
+
+  def test_strip_channels
+    fname = 'test/fixtures/DEM_Report_10-02-13.csv'
+    result = @cc.process(File.read fname)
+    stripped_result = @cc.strip_channels(result, "CONSUMPTN HI", "CONSUMPTN LO")
+
+    expected_channels = ["CURRENT A", "CURRENT B", "CURRENT C",
+                         "DAY.NGT", "DEMAND", "POWER FACTOR",
+                         "VOLTAGE A.N", "VOLTAGE B.N", "VOLTAGE C.N"]
+    assert_equal expected_channels, stripped_result.channels
+  end
+
   def test_data_loss
     fname = 'test/fixtures/data-loss_DEM_Report_11-03-14.csv'
     File.open(fname) do |fin|

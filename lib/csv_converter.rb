@@ -84,6 +84,44 @@ class CsvConverter
     ProcessResult.new(channels_set.sort, points_set.sort, hash3)
   end
 
+  def consolidate_consumption(presult)
+    if presult.channels.include?('CONSUMPTN HI') \
+       && presult.channels.include?('CONSUMPTN LO')
+
+      # create new CONSUMPTN channel
+      extended = presult.channels + ['CONSUMPTN']
+      sorted   = extended.sort
+      presult.channels = sorted
+
+      # create channel data
+      time_asc = presult.data.keys.sort
+      time_asc.each_with_index do |tm, ii|
+        points_matrix = presult.data[tm]
+        points_matrix.each do |pt, chans|
+          if 0 == ii
+            chans['CONSUMPTN'] = nil
+          else
+            prev_time  = time_asc[ii - 1]
+            prev_chans = presult.data[prev_time][pt]
+            if (prev_hi = prev_chans['CONSUMPTN HI']) \
+               && (prev_lo = prev_chans['CONSUMPTN LO']) \
+               && (curr_hi = chans['CONSUMPTN HI']) \
+               && (curr_lo = chans['CONSUMPTN LO'])
+              chans['CONSUMPTN'] = (curr_hi + curr_lo) - (prev_hi + prev_lo)
+            end
+          end
+        end
+      end
+    end
+
+    presult	# for convenient chaining
+  end
+
+  def strip_channels(presult, *channels)
+    presult.channels -= channels
+    presult	# for convenient chaining
+  end
+
   def add_to_hash(hsh, timestamp, point, channel, data)
     # mappings: timestamp -> {point -> {channel -> data}}
     hsh[timestamp] = Hash.new unless hsh.has_key?(timestamp)
