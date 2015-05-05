@@ -11,7 +11,8 @@ class FormatMatrix
     converter = CsvConverter.new
     curr_result = converter.process(instream)
 
-    unless prev_fname.nil?
+    # point cut - pre consolidate
+    if prev_fname && File.exists?(prev_fname)
       tstamp = curr_result.get_hypothetical_previous_timestamp
       prev_result = converter.process(File.open prev_fname)
       if prev_points_matrix = prev_result.data[tstamp]
@@ -22,8 +23,13 @@ class FormatMatrix
     consolidated = converter.consolidate_consumption(curr_result)
     converter.strip_channels(consolidated, "CONSUMPTN HI", "CONSUMPTN LO")
 
+    # point cut - post consolidate
+    if prev_fname && File.exists?(prev_fname)
+      curr_result.data.delete tstamp
+    end
+
     formatter = MatrixFormatter.new
-    formatter.output(outstream, massaged)
+    formatter.output(outstream, consolidated)
   end
 
   def find_previous_file(prev_file)
