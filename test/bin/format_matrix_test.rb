@@ -66,4 +66,10 @@ class FormatMatrixTest < Minitest::Test
     assert_equal "submetering/201401/DEM_Report_01-06-14.csv", sorted.first.filename
     assert_equal "submetering/201401/DEM_Report_01-06-15.csv", sorted.last.filename
   end
+
+  def test_previous_timestamp
+    expected_tstamp = Time.parse '2015-05-15 23:45:00'
+    curr_tstamp = Time.parse '2015-05-16 00:00:00'
+    assert_equal expected_tstamp, @app.previous_timestamp(curr_tstamp)
+  end
 end

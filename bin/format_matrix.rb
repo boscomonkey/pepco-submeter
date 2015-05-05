@@ -13,7 +13,7 @@ class FormatMatrix
 
     # point cut - pre consolidate
     if prev_fname && File.exists?(prev_fname)
-      tstamp = curr_result.get_hypothetical_previous_timestamp
+      tstamp = self.previous_timestamp(curr_result.data.keys.first)
       prev_result = converter.process(File.open prev_fname)
       if prev_points_matrix = prev_result.data[tstamp]
         curr_result.data[tstamp] = prev_points_matrix
@@ -71,6 +71,9 @@ class FormatMatrix
     date_maps.sort {|a, b| a.timestamp <=> b.timestamp }
   end
 
+  def previous_timestamp(tm)
+    tm - 15 * 60
+  end
 end
 
 
