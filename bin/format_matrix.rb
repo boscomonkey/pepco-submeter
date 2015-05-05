@@ -7,28 +7,47 @@ class FormatMatrix
   class DateMap < Struct.new(:filename, :pre, :match, :post, :timestamp)
   end
 
-  def run(instream, outstream, prev_fname=nil)
+  def run(instream, outstream, prev_fname)
     converter = CsvConverter.new
-    prev_result = prev_fname ? converter.process(File.open prev_fname) : nil
+    curr_result = converter.process(instream)
 
-    presult = converter.process(instream)
-    consolidated = converter.consolidate_consumption(presult)
-    stripped = converter.strip_channels(consolidated, "CONSUMPTN HI", "CONSUMPTN LO")
+    unless prev_fname.nil?
+      tstamp = curr_result.get_hypothetical_previous_timestamp
+      prev_result = converter.process(File.open prev_fname)
+      if prev_points_matrix = prev_result.data[tstamp]
+        curr_result.data[tstamp] = prev_points_matrix
+      end
+    end
+
+    consolidated = converter.consolidate_consumption(curr_result)
+    converter.strip_channels(consolidated, "CONSUMPTN HI", "CONSUMPTN LO")
 
     formatter = MatrixFormatter.new
-    formatter.output(outstream, stripped)
+    formatter.output(outstream, massaged)
   end
 
-  def find_previous_file(files_array)
-    sorted_records = self.sort_files_by_date files_array
-    rec = sorted_records.first
-
-    prev_date = rec.timestamp.prev_day
-    prev_str  = prev_date.strftime '%m-%d-%y'
-    "#{rec.pre}#{prev_str}#{rec.post}"
+  def find_previous_file(prev_file)
+    if prev_file.nil?
+      self.guess_previous_file(self.get_argf_filenames)
+    else
+      prev_file
+    end
   end
 
-  def map_file_to_date(fname)
+  def get_argf_filenames
+    [ARGF.filename] + ARGF.argv - ['-']
+  end
+
+  def guess_previous_file(existing_files)
+    sorted_records = self.build_sorted_records existing_files
+    if rec = sorted_records.first
+      prev_date = rec.timestamp.prev_day
+      prev_str  = prev_date.strftime '%m-%d-%y'
+      "#{rec.pre}#{prev_str}#{rec.post}"
+    end
+  end
+
+  def build_rich_record(fname)
     if fname =~ /^(.*)(\d\d-\d\d-\d\d)(.*)$/
       pre   = $1
       match = $2
@@ -36,11 +55,13 @@ class FormatMatrix
       timestamp = Date.strptime match, '%m-%d-%y'
 
       DateMap.new fname, pre, match, post, timestamp
+    else
+      raise "BADLY FORMED FILENAME: #{fname}"
     end
   end
 
-  def sort_files_by_date(files_array)
-    date_maps = files_array.map {|fname| self.map_file_to_date(fname) }
+  def build_sorted_records(existing_files)
+    date_maps = existing_files.map {|fname| self.build_rich_record(fname) }
     date_maps.sort {|a, b| a.timestamp <=> b.timestamp }
   end
 
@@ -52,11 +73,11 @@ if __FILE__ == $0
 
   options = {}
   OptionParser.new do |opts|
-    opts.banner = "Usage: #{$0} [options] FILE1 FILE2 ...FILEn"
+    opts.banner = "Usage: #{$0} [options] [FILE1 FILE2 ... FILEn]"
 
-    opts.on("-f", "--force", "Runs regardless of warnings") do |force|
-      options[:force] = force
-    end
+    # opts.on("-f", "--force", "Runs regardless of warnings") do |force|
+    #   options[:force] = force
+    # end
 
     opts.on("-h", "--help", "Prints this help") do
       puts opts
@@ -70,13 +91,7 @@ if __FILE__ == $0
 
   # figure out previous file
   app = FormatMatrix.new
-  prev_fname = options[:previous]
-  unless prev_fname
-    filenames = [ARGF.filename] + ARGF.argv - ['-']
-    if filenames.size > 0
-      prev_fname = app.find_previous_file(filenames)
-    end
-  end
+  prev_fname = app.find_previous_file(options[:previous])	# may still be nil
 
   app.run(ARGF, STDOUT, prev_fname)
 end
